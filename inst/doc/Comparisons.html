@@ -12,7 +12,7 @@
 
 <meta name="author" content="Benjamin Christoffersen" />
 
-<meta name="date" content="2018-07-01" />
+<meta name="date" content="2018-09-12" />
 
 <title>Computation time and features</title>
 
@@ -70,7 +70,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h1 class="title toc-ignore">Computation time and features</h1>
 <h4 class="author"><em>Benjamin Christoffersen</em></h4>
-<h4 class="date"><em>2018-07-01</em></h4>
+<h4 class="date"><em>2018-09-12</em></h4>
 
 
 
@@ -91,19 +91,19 @@ frm &lt;-<span class="st"> </span><span class="kw">eval</span>(<span class="kw">
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(rollRegres)
 <span class="kw">all.equal</span>(<span class="kw">roll_regress_R</span>(X, y, wdth), <span class="kw">roll_regres.fit</span>(X, y, wdth)<span class="op">$</span>coefs, 
           <span class="dt">check.attributes =</span> <span class="ot">FALSE</span>)
-<span class="co">#R [1] &quot;Mean relative difference: 0.9998881&quot;</span>
+<span class="co">#R [1] TRUE</span>
 <span class="kw">all.equal</span>(<span class="kw">roll_regress_R</span>(X, y, wdth), <span class="kw">roll_regres</span>(frm, df, wdth)<span class="op">$</span>coefs, 
           <span class="dt">check.attributes =</span> <span class="ot">FALSE</span>)
-<span class="co">#R [1] &quot;Mean relative difference: 0.9998881&quot;</span>
+<span class="co">#R [1] TRUE</span>
 <span class="kw">all.equal</span>(<span class="kw">roll_regress_R</span>(X, y, wdth), <span class="kw">roll_regress_zoo</span>(X, y, wdth), 
           <span class="dt">check.attributes =</span> <span class="ot">FALSE</span>)
-<span class="co">#R [1] &quot;Mean relative difference: 0.9998881&quot;</span>
+<span class="co">#R [1] TRUE</span>
 <span class="kw">all.equal</span>(<span class="kw">roll_regress_R</span>(X, y, wdth), <span class="kw">roll_regress_R_for_loop</span>(X, y, wdth), 
           <span class="dt">check.attributes =</span> <span class="ot">FALSE</span>)
-<span class="co">#R [1] &quot;Mean relative difference: 0.9998881&quot;</span>
+<span class="co">#R [1] TRUE</span>
 <span class="kw">all.equal</span>(<span class="kw">roll_regress_R</span>(X, y, wdth), <span class="kw">roll_lm_func</span>(X, y, wdth), 
           <span class="dt">check.attributes =</span> <span class="ot">FALSE</span>)
-<span class="co">#R [1] &quot;Mean relative difference: 0.9998881&quot;</span></code></pre></div>
+<span class="co">#R [1] TRUE</span></code></pre></div>
 <p>and here then we compare the computation time</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">microbenchmark<span class="op">::</span><span class="kw">microbenchmark</span>(
   <span class="dt">roll_regress            =</span> <span class="kw">roll_regres.fit</span>(X, y, wdth),
@@ -116,19 +116,19 @@ frm &lt;-<span class="st"> </span><span class="kw">eval</span>(<span class="kw">
   <span class="dt">times =</span> <span class="dv">5</span>)
 <span class="co">#R Unit: milliseconds</span>
 <span class="co">#R                     expr        min         lq       mean     median         uq</span>
-<span class="co">#R             roll_regress   5.761187   6.063805   6.291281   6.498768   6.551311</span>
-<span class="co">#R          roll_regress_df   6.843657   7.356448   7.910719   7.433089   7.656694</span>
-<span class="co">#R           roll_regress_R 162.769448 162.883225 169.889885 171.152660 173.517501</span>
-<span class="co">#R         roll_regress_zoo 737.844834 739.207403 752.422065 743.101528 757.885534</span>
-<span class="co">#R  roll_regress_R_for_loop 350.679842 355.876486 375.920820 374.616642 388.647265</span>
-<span class="co">#R                  roll_lm 135.541782 139.240352 140.969537 139.568648 141.311661</span>
+<span class="co">#R             roll_regress   6.531166   6.593586   7.286604   7.273093   7.656304</span>
+<span class="co">#R          roll_regress_df   7.813933   8.429440   8.629657   8.459860   8.845440</span>
+<span class="co">#R           roll_regress_R 187.399656 191.192251 197.489145 193.989290 203.531619</span>
+<span class="co">#R         roll_regress_zoo 827.319568 842.312173 853.858177 862.576090 868.272489</span>
+<span class="co">#R  roll_regress_R_for_loop 416.702749 418.746406 436.568840 436.063555 439.137533</span>
+<span class="co">#R                  roll_lm 158.625707 161.093265 162.873651 161.649512 162.038253</span>
 <span class="co">#R         max neval</span>
-<span class="co">#R    6.581336     5</span>
-<span class="co">#R   10.263708     5</span>
-<span class="co">#R  179.126589     5</span>
-<span class="co">#R  784.071026     5</span>
-<span class="co">#R  409.783865     5</span>
-<span class="co">#R  149.185244     5</span>
+<span class="co">#R    8.378872     5</span>
+<span class="co">#R    9.599614     5</span>
+<span class="co">#R  211.332909     5</span>
+<span class="co">#R  868.810564     5</span>
+<span class="co">#R  472.193955     5</span>
+<span class="co">#R  170.961519     5</span>
 
 <span class="co"># here is the formula used above</span>
 frm
@@ -218,6 +218,7 @@ pck_out &lt;-<span class="st"> </span><span class="kw">roll_regres.fit</span>(
 #####
 <span class="co"># assign R-version</span>
 R_func &lt;-<span class="st"> </span><span class="cf">function</span>(X, y, width, grp){
+  grp &lt;-<span class="st"> </span>grp <span class="op">+</span><span class="st"> </span>1L <span class="op">-</span><span class="st"> </span><span class="kw">min</span>(grp)
   u_grp =<span class="st"> </span><span class="kw">unique</span>(grp)
   n &lt;-<span class="st"> </span><span class="kw">nrow</span>(X)
   p &lt;-<span class="st"> </span><span class="kw">ncol</span>(X)
@@ -226,7 +227,7 @@ R_func &lt;-<span class="st"> </span><span class="cf">function</span>(X, y, widt
   r.squared          &lt;-<span class="st"> </span><span class="kw">rep</span>(<span class="ot">NA_real_</span>, n)
   one_step_forecasts &lt;-<span class="st"> </span><span class="kw">rep</span>(<span class="ot">NA_real_</span>, n)
 
-  start_val &lt;-<span class="st"> </span><span class="kw">max</span>(<span class="kw">which</span>(u_grp <span class="op">&lt;=</span><span class="st"> </span>width))
+  start_val &lt;-<span class="st"> </span><span class="kw">min</span>(<span class="kw">which</span>(u_grp <span class="op">&gt;=</span><span class="st"> </span>width))
   <span class="cf">for</span>(g <span class="cf">in</span> u_grp[start_val<span class="op">:</span><span class="kw">length</span>(u_grp)]){
     idx &lt;-<span class="st"> </span><span class="kw">which</span>(grp <span class="op">%in%</span><span class="st"> </span>(g <span class="op">-</span><span class="st"> </span>width <span class="op">+</span><span class="st"> </span>1L)<span class="op">:</span>g)
     i &lt;-<span class="st"> </span><span class="kw">which</span>(grp <span class="op">==</span><span class="st"> </span>g)
@@ -260,6 +261,73 @@ R_out &lt;-<span class="st"> </span><span class="kw">R_func</span>(X, y, 10L, <s
 <span class="kw">stopifnot</span>(<span class="kw">isTRUE</span>(<span class="kw">all.equal</span>(R_out<span class="op">$</span>r.squared         , pck_out<span class="op">$</span>r.squared)))
 <span class="kw">stopifnot</span>(<span class="kw">isTRUE</span>(<span class="kw">all.equal</span>(R_out<span class="op">$</span>one_step_forecasts, pck_out<span class="op">$</span>one_step_forecasts)))</code></pre></div>
 </div>
+<div id="block-with-minimum-required-number-of-observation" class="section level2">
+<h2>Block with minimum required number of observation</h2>
+<p>Suppose that we are performing rolling regression on stock data over a yearly window. Further, suppose that there are som gaps in the data where we do not have data and we require at least 6 months of data. This can be done as follows</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">#####
+<span class="co"># simulate data</span>
+<span class="kw">set.seed</span>(<span class="dv">96235555</span>)
+n   &lt;-<span class="st"> </span>10L <span class="op">*</span><span class="st"> </span>12L <span class="op">*</span><span class="st"> </span>21L <span class="co"># x years w/ 12 months of 21 trading days</span>
+month &lt;-<span class="st"> </span>(<span class="kw">seq_len</span>(n) <span class="op">-</span><span class="st"> </span>1L) <span class="op">%/%</span><span class="st"> </span>21L <span class="op">+</span><span class="st"> </span>1L <span class="co"># group by months</span>
+<span class="kw">set.seed</span>(<span class="dv">29478439</span>)
+X &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">rnorm</span>(n <span class="op">*</span><span class="st"> </span>4L), <span class="dt">ncol =</span> 4L)
+y &lt;-<span class="st"> </span><span class="kw">rnorm</span>(n)
+
+<span class="co"># randomly drop rows</span>
+keep &lt;-<span class="st"> </span><span class="kw">seq_along</span>(y) <span class="op">%in%</span><span class="st"> </span><span class="kw">sample.int</span>(<span class="kw">nrow</span>(X), <span class="kw">as.integer</span>(n <span class="op">*</span><span class="st"> </span>.<span class="dv">5</span>))
+X     &lt;-<span class="st"> </span>X    [keep, ]
+y     &lt;-<span class="st"> </span>y    [keep]
+month &lt;-<span class="st"> </span>month[keep]
+
+#####
+<span class="co"># use package function</span>
+pck_out &lt;-<span class="st"> </span><span class="kw">roll_regres.fit</span>(
+  X, y, <span class="dt">width =</span> 12L, <span class="dt">grp =</span> month, <span class="dt">min_obs =</span> 21L <span class="op">*</span><span class="st"> </span>6L, <span class="dt">do_downdates =</span> <span class="ot">TRUE</span>, 
+  <span class="dt">do_compute =</span> <span class="kw">c</span>(<span class="st">&quot;sigmas&quot;</span>, <span class="st">&quot;r.squareds&quot;</span>))
+
+#####
+<span class="co"># assign R-version</span>
+R_func &lt;-<span class="st"> </span><span class="cf">function</span>(X, y, width, grp, downdate, min_obs){
+  grp &lt;-<span class="st"> </span>grp <span class="op">+</span><span class="st"> </span>1L <span class="op">-</span><span class="st"> </span><span class="kw">min</span>(grp)
+  u_grp =<span class="st"> </span><span class="kw">unique</span>(grp)
+  n &lt;-<span class="st"> </span><span class="kw">nrow</span>(X)
+  p &lt;-<span class="st"> </span><span class="kw">ncol</span>(X)
+  out &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="ot">NA_real_</span>, n, p)
+  sigmas    &lt;-<span class="st"> </span><span class="kw">rep</span>(<span class="ot">NA_real_</span>, n)
+  r.squared &lt;-<span class="st"> </span><span class="kw">rep</span>(<span class="ot">NA_real_</span>, n)
+
+  start_val &lt;-<span class="st"> </span><span class="kw">min</span>(<span class="kw">which</span>(u_grp <span class="op">&gt;=</span><span class="st"> </span>width))
+  <span class="cf">for</span>(g <span class="cf">in</span> u_grp[start_val<span class="op">:</span><span class="kw">length</span>(u_grp)]){
+    idx &lt;-
+<span class="st">      </span><span class="cf">if</span>(downdate)
+        <span class="kw">which</span>(grp <span class="op">%in%</span><span class="st"> </span>(g <span class="op">-</span><span class="st"> </span>width <span class="op">+</span><span class="st"> </span>1L)<span class="op">:</span>g) <span class="cf">else</span>
+          <span class="kw">which</span>(grp <span class="op">%in%</span><span class="st"> </span><span class="dv">1</span><span class="op">:</span>g)
+    i &lt;-<span class="st"> </span><span class="kw">which</span>(grp <span class="op">==</span><span class="st"> </span>g)
+    <span class="cf">if</span>(<span class="kw">length</span>(idx) <span class="op">&lt;</span><span class="st"> </span>min_obs)
+      <span class="cf">next</span>
+    fit &lt;-<span class="st"> </span><span class="kw">lm</span>(y[idx] <span class="op">~</span><span class="st"> </span><span class="op">-</span><span class="dv">1</span> <span class="op">+</span><span class="st"> </span>X[idx, , <span class="dt">drop =</span> <span class="ot">FALSE</span>])
+    out[i, ] &lt;-<span class="st"> </span><span class="kw">sapply</span>(fit<span class="op">$</span>coefficients, rep, <span class="dt">times =</span> <span class="kw">length</span>(i))
+
+    su &lt;-<span class="st"> </span><span class="kw">summary</span>(fit)
+    sigmas[i] &lt;-<span class="st"> </span>su<span class="op">$</span>sigma
+
+    ss1 &lt;-<span class="st"> </span><span class="kw">sum</span>((y[idx] <span class="op">-</span><span class="st"> </span><span class="kw">mean</span>(y[idx]))<span class="op">^</span><span class="dv">2</span>)
+    ss2 &lt;-<span class="st"> </span><span class="kw">sum</span>(fit<span class="op">$</span>residuals<span class="op">^</span><span class="dv">2</span>)
+    r.squared[i] &lt;-<span class="st"> </span><span class="dv">1</span> <span class="op">-</span><span class="st"> </span>ss2 <span class="op">/</span><span class="st"> </span>ss1
+  }
+
+  <span class="kw">list</span>(<span class="dt">coef =</span> out, <span class="dt">sigmas =</span> sigmas, <span class="dt">r.squared =</span> r.squared)
+}
+
+R_out &lt;-<span class="st"> </span><span class="kw">R_func</span>(X, y, <span class="dt">width =</span> 12L, <span class="dt">downdate =</span> <span class="ot">TRUE</span>, <span class="dt">grp =</span> month, 
+                <span class="dt">min_obs =</span> 21L <span class="op">*</span><span class="st"> </span>6L)
+
+#####
+<span class="co"># gives the same</span>
+<span class="kw">stopifnot</span>(<span class="kw">isTRUE</span>(<span class="kw">all.equal</span>(R_out<span class="op">$</span>coef     , pck_out<span class="op">$</span>coefs)))
+<span class="kw">stopifnot</span>(<span class="kw">isTRUE</span>(<span class="kw">all.equal</span>(R_out<span class="op">$</span>sigmas   , pck_out<span class="op">$</span>sigmas)))
+<span class="kw">stopifnot</span>(<span class="kw">isTRUE</span>(<span class="kw">all.equal</span>(R_out<span class="op">$</span>r.squared, pck_out<span class="op">$</span>r.squared)))</code></pre></div>
+</div>
 </div>
 <div id="session-info" class="section level1">
 <h1>Session info</h1>
@@ -282,10 +350,10 @@ R_out &lt;-<span class="st"> </span><span class="kw">R_func</span>(X, y, 10L, <s
 <span class="co">#R [8] base     </span>
 <span class="co">#R </span>
 <span class="co">#R other attached packages:</span>
-<span class="co">#R [1] rollRegres_0.1.0 roll_1.0.7       zoo_1.8-2       </span>
+<span class="co">#R [1] rollRegres_0.1.1 roll_1.0.7       zoo_1.8-2       </span>
 <span class="co">#R </span>
 <span class="co">#R loaded via a namespace (and not attached):</span>
-<span class="co">#R  [1] Rcpp_0.12.17         lattice_0.20-35      digest_0.6.15       </span>
+<span class="co">#R  [1] Rcpp_0.12.18         lattice_0.20-35      digest_0.6.15       </span>
 <span class="co">#R  [4] rprojroot_1.3-2      grid_3.5.0           backports_1.1.2     </span>
 <span class="co">#R  [7] magrittr_1.5         evaluate_0.10.1      RcppParallel_4.4.0  </span>
 <span class="co">#R [10] stringi_1.1.7        checkmate_1.8.5      rmarkdown_1.9       </span>
@@ -304,6 +372,7 @@ roll_regress_R &lt;-<span class="st"> </span><span class="cf">function</span>(X,
   
   dummy_<span class="dv">1</span> &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>.)
   dummy_<span class="dv">2</span> &lt;-<span class="st"> </span><span class="kw">numeric</span>(p)
+  dummy_<span class="dv">3</span> &lt;-<span class="st"> </span><span class="kw">numeric</span>(p)
 
   is_first &lt;-<span class="st"> </span><span class="ot">TRUE</span>
   <span class="cf">for</span>(i <span class="cf">in</span> width<span class="op">:</span>n){
@@ -322,11 +391,11 @@ roll_regress_R &lt;-<span class="st"> </span><span class="cf">function</span>(X,
 
       <span class="co"># update R </span>
       rollRegres<span class="op">:::</span><span class="kw">dchud_wrap</span>(
-        R, p, p, x_new, dummy_<span class="dv">1</span>, 0L, 0L, <span class="dv">0</span>., <span class="dv">0</span>., dummy_<span class="dv">2</span>, dummy_<span class="dv">2</span>)
+        R, p, p, x_new, dummy_<span class="dv">1</span>, 0L, 0L, <span class="dv">0</span>., <span class="dv">0</span>., dummy_<span class="dv">2</span>, dummy_<span class="dv">3</span>)
 
       <span class="co"># downdate R</span>
       rollRegres<span class="op">:::</span><span class="kw">dchdd_wrap</span>(
-        R, p, p, x_old, dummy_<span class="dv">1</span>, 0L, 0L, <span class="dv">0</span>., <span class="dv">0</span>., dummy_<span class="dv">2</span>, dummy_<span class="dv">2</span>, 
+        R, p, p, x_old, dummy_<span class="dv">1</span>, 0L, 0L, <span class="dv">0</span>., <span class="dv">0</span>., dummy_<span class="dv">2</span>, dummy_<span class="dv">3</span>, 
         <span class="kw">integer</span>(<span class="dv">1</span>))
 
       <span class="co"># update XtY</span>

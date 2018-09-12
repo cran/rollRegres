@@ -94,7 +94,6 @@ test_that("`roll_regres` gives the same as `roll_regres.fit` with `do_compute` a
 
 test_that("`roll_regres.fit` post warning when low p compared to n", {
   # see github.com/boennecd/rollRegres/issues/2
-  library(rollRegres)
   x <- matrix(rnorm(4 * 20), ncol = 4)
   y <- rnorm(20)
 
@@ -104,4 +103,91 @@ test_that("`roll_regres.fit` post warning when low p compared to n", {
 
   # should have no warning
   roll_regres.fit(x, y, width = 12L)
+})
+
+roll_regress_R_for_loop <- function(X, y, width, grp, downdate, min_obs){
+  grp <- grp + 1L - min(grp)
+  u_grp = unique(grp)
+  n <- nrow(X)
+  p <- ncol(X)
+  out <- matrix(NA_real_, n, p)
+  sigmas             <- rep(NA_real_, n)
+  r.squared          <- rep(NA_real_, n)
+
+  start_val <- min(which(u_grp >= width))
+  for(g in u_grp[start_val:length(u_grp)]){
+    idx <-
+      if(downdate)
+        which(grp %in% (g - width + 1L):g) else
+          which(grp %in% 1:g)
+    i <- which(grp == g)
+    if(length(idx) < min_obs)
+      next
+    fit <- lm(y[idx] ~ -1 + X[idx, , drop = FALSE])
+    out[i, ] <- sapply(fit$coefficients, rep, times = length(i))
+
+    su <- summary(fit)
+    sigmas[i] <- su$sigma
+
+    ss1 <- sum((y[idx] - mean(y[idx]))^2)
+    ss2 <- sum(fit$residuals^2)
+    r.squared[i] <- 1 - ss2 / ss1
+  }
+
+  list(coef = out, sigmas = sigmas, r.squared = r.squared,
+       one_step_forecasts = NULL)
+}
+test_that("`roll_regres.fit` works as expected with 'min_obs'", {
+  #####
+  # simulate complete data
+  n   <- 2L * 12L * 21L # x years w/ 12 months of 21 trading days
+  mth <- (seq_len(n) - 1L) %/% 21L + 1L # group by months
+  set.seed(29478439)
+  X <- matrix(rnorm(n * 4L), ncol = 4L,
+              dimnames = list(1:n, paste0("X", 1:4)))
+  y <- rnorm(n)
+
+  for(i in 1:20){
+    keep <- seq_along(y) %in% sample.int(nrow(X), as.integer(n * .5))
+    x1   <- X  [keep, ]
+    y1   <- y  [keep]
+    mth1 <- mth[keep]
+
+    o1 <- roll_regress_R_for_loop(X = x1, y = y1, grp = mth1, width = 6L,
+                                  downdate = TRUE, min_obs = 63L)
+
+    o2 <- roll_regres.fit(
+      x = x1, y = y1, width = 6L, grp = mth1, do_downdates = TRUE,
+      min_obs = 63L,
+      do_compute = c("sigmas", "r.squareds"))
+    expect_equal(o1, o2, check.attributes = FALSE)
+  }
+})
+
+test_that("Bug found doing development is fixed", {
+  dat <- readRDS("test_ex_grp.RDS")
+  out <- roll_regres.fit(
+    x = cbind(1, dat$x), y = dat$y, width = 12L, do_downdates = TRUE,
+    min_obs = 20L * 3L, do_compute = c("sigmas", "r.squareds"), grp = dat$grp)
+
+  out_R <- roll_regress_R_for_loop(
+    X = cbind(1, dat$x), y = dat$y, width = 12L,     downdate = TRUE,
+    min_obs = 20L * 3L                                        , grp = dat$grp)
+
+  expect_equal(out$coefs, out_R$coef)
+  expect_equal(out$sigmas, out_R$sigmas)
+  expect_equal(out$r.squareds, out_R$r.squared)
+
+  dat <- readRDS("test_ex_grp1.RDS")
+  out <- roll_regres.fit(
+    x = cbind(1, dat$x), y = dat$y, width = 12L, do_downdates = TRUE,
+    min_obs = 20L * 3L, do_compute = c("sigmas", "r.squareds"), grp = dat$grp)
+
+  out_R <- roll_regress_R_for_loop(
+    X = cbind(1, dat$x), y = dat$y, width = 12L,     downdate = TRUE,
+    min_obs = 20L * 3L                                        , grp = dat$grp)
+
+  expect_equal(out$coefs, out_R$coef)
+  expect_equal(out$sigmas, out_R$sigmas)
+  expect_equal(out$r.squareds, out_R$r.squared)
 })

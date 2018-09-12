@@ -193,9 +193,10 @@ test_that("`roll_cpp` works in n > 1 length block case with and without downdati
     0.863, -2.713, -0.429, 0.865, -0.688, 0.498, 0.607, 0.068, 1.671,
     -0.928, 0.925, -0.417, 0.436, 0.554, -2.642, -0.141, 0.486, 0.51,
     -0.914, -1.104, -0.114)
-  wdth = 10L
+  wdth = 9L
 
   roll_regress_R_for_loop <- function(X, y, width, grp, downdate){
+    grp <- grp + 1L - min(grp)
     u_grp = unique(grp)
     n <- nrow(X)
     p <- ncol(X)
@@ -204,7 +205,7 @@ test_that("`roll_cpp` works in n > 1 length block case with and without downdati
     r.squared          <- rep(NA_real_, n)
     one_step_forecasts <- rep(NA_real_, n)
 
-    start_val <- max(which(u_grp <= width))
+    start_val <- min(which(u_grp >= width))
     for(g in u_grp[start_val:length(u_grp)]){
       idx <-
         if(downdate)
@@ -276,3 +277,64 @@ test_that("`roll_cpp` works in n > 1 length block case with and without downdati
   for(i in 1:nrow(vals))
     eval(do.call(., as.list(vals[i, ])))
 })
+
+test_that("'.find_grps' gives the same as a simpler R-version", {
+  # Idea: write a simpler R function where we can check the result of
+  #       View(do.call(cbind, R_func(...)$tmp)) and then test cpp function
+  #       against this R function
+  R_func <- function(grp, width, min_obs){
+    out <- istart <- integer(length(grp))
+    for(i in 1:length(grp)){
+      idx <- which(grp == grp[i])
+      keep <- grp > grp[i] - width & grp <= grp[i]
+      out[idx] <- sum(keep)
+      istart[idx] <- min(which(keep))
+    }
+
+    can_comp <- out >= min_obs
+
+    # we first want to set values after a full window
+    can_comp[grp - min(grp) < width - 1L] <- FALSE
+
+    need_restart <- c(FALSE, head(can_comp, -1) != can_comp[-1] & can_comp[-1])
+
+    chunk_grp <- cumsum(need_restart) * can_comp
+    i_start     <- tapply(istart, chunk_grp, min)[-1]
+    i_grp_start <- tapply(seq_along(grp), chunk_grp, min)[-1]
+    i_end       <- tapply(seq_along(grp), chunk_grp, max)[-1]
+
+    tmp <- cbind(nobs = out, istart = istart, can_comp = can_comp,
+                 need_restart = need_restart, grp = grp, chunk_grp = chunk_grp)
+
+    list(
+      tmp = tmp, i_start = i_start, i_grp_start = i_grp_start, i_end = i_end)
+  }
+
+  # simple case that we have all observations
+  x <- (1:1000 - 1L) %/% 4L + 1L
+  wth <- 5L
+  min_obs <- 10L
+
+  expect_equal(
+    .find_chunks(x, wth, min_obs),
+    list(grp_idx_start = 1L, grp_idx_stop = 1000L, has_value_start = 17L))
+
+  set.seed(36385244)
+  for(i in 1:25){
+    # drop random entries
+    x1 <- x[seq_along(x) %in% sample.int(length(x), 500)]
+    t1 <-       R_func(x1, wth, min_obs)
+    # View(t1$tmp)
+    t2 <- .find_chunks(x1, wth, min_obs)
+
+    expect_length(t2$grp_idx_start, length(t2$has_value_start))
+    expect_length(t2$grp_idx_stop , length(t2$has_value_start))
+    expect_true(all(t2$grp_idx_start   <= t2$has_value_start))
+    expect_true(all(t2$has_value_start <= t2$grp_idx_stop))
+
+    expect_equal(t1$i_start, t2$grp_idx_start, check.attributes = FALSE)
+    expect_equal(t1$i_grp_start, t2$has_value_start, check.attributes = FALSE)
+    expect_equal(t1$i_end, t2$grp_idx_stop, check.attributes = FALSE)
+  }
+})
+

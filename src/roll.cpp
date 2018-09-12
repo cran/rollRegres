@@ -29,6 +29,7 @@ inline double
 inline double
   downdate_sse(const double x, double &sse, int &t, double &x_bar){
     double e_t = x - x_bar;
+    /* TODO: large number minus small number -- likely not good */
     x_bar = (t / (t - 1.)) * x_bar -  x / (t - 1.);
     sse -= e_t * (x - x_bar);
     t -= 1L;
@@ -43,7 +44,10 @@ inline double dot(const double *x, const double *y, const unsigned int p){
 }
 
 inline int find_stard_end(
-    int &start, int &end, const int delta_grp, const int *grp, const int n){
+    int &start, int &end, const int delta_grp, const int *grp, const int n,
+    /* additional arguments if stopping can also be caused by a sufficient
+     * number of observations */
+    const bool use_min_obs = false, const int min_obs = 0L, int nobs = 1L){
   if(start == n)
     Rcpp::stop("Invalid 'start' and 'n'");
 
@@ -54,8 +58,9 @@ inline int find_stard_end(
 
   int start_grp = *(grp + start), next_grp = start_grp, old_grp, length = 0L;
 
+  bool do_stop = false;
   do {
-    ++length;
+    ++length; ++nobs;
 
     if(end == n - 1L){ /* reached the end */
       ++end;
@@ -66,7 +71,11 @@ inline int find_stard_end(
     next_grp = *(grp + ++end);
     if(old_grp > next_grp)
       Rcpp::stop("'grp' is not sorted");
-  } while(next_grp - start_grp < delta_grp);
+
+    do_stop = next_grp - start_grp >= delta_grp;
+    if(use_min_obs && next_grp != old_grp && nobs >= min_obs)
+      do_stop = true;
+  } while(!do_stop);
 
   return length;
 }
@@ -75,10 +84,11 @@ inline int find_stard_end(
 //' @useDynLib rollRegres, .registration = TRUE
 // [[Rcpp::export]]
 Rcpp::List roll_cpp(
-    const arma::mat &X, const arma::vec &Y, int window,
-      const bool do_compute_R_sqs, const bool do_compute_sigmas,
-      const bool do_1_step_forecasts, arma::ivec grp, const bool use_grp,
-      const bool do_downdates){
+    const arma::mat &X, const arma::vec &Y, const int window,
+    const bool do_compute_R_sqs,
+    const bool do_compute_sigmas, const bool do_1_step_forecasts,
+    arma::ivec grp, const bool use_grp, const bool do_downdates,
+    const bool use_min_obs = false, const int min_obs = 0L){
   int n = X.n_rows, p = X.n_cols;
   const int p_cnst = p;
   arma::mat X_T = X.t();
@@ -127,7 +137,7 @@ Rcpp::List roll_cpp(
     if(is_first){ // setup QR decomposition
       if(use_grp){
         sample_size += find_stard_end(
-          start         , end, window, grp.begin(), n);
+          start         , end, window, grp.begin(), n, use_min_obs, min_obs);
         /* need to find `this_grp_start` */
         int last_grp = grp[end - 1L];
         this_grp_start = end - 1L;
@@ -328,3 +338,77 @@ Rcpp::List roll_cpp(
 
   return out_list;
 }
+
+
+// [[Rcpp::export(name = ".find_chunks")]]
+Rcpp::List chunk(const arma::ivec grp, const unsigned int width,
+                 const unsigned int min_obs){
+  /* Idea: we make one pass through `grp`. We keep track of the number of
+   *       observations, current chunk number, the current starting index, and
+   *       whether we are about to set a new chunk */
+  bool is_new_chunk = true;
+  unsigned int nobs = 1L, chunk_n = 0, istart = 0, grp_start = 0;
+  const arma::uword n = grp.n_elem;
+  std::vector<int> grp_idx_start, grp_idx_stop, has_value_start;
+  grp_idx_start  .reserve(n);
+  grp_idx_stop   .reserve(n);
+  has_value_start.reserve(n);
+
+  const int *g = grp.begin();
+  /* hopefully not a used group... */
+  int cur_grp = std::numeric_limits<int>::min(), first_grp = *grp.begin();
+
+  bool has_window_length = false;
+  for(unsigned int i = 0; i < grp.n_elem; ++g, ++i, ++nobs){
+    bool is_new_grp = *g != cur_grp;
+    has_window_length = has_window_length or *g - first_grp >= (int)width - 1L;
+    cur_grp = *g;
+    if(is_new_grp){
+      grp_start = i;
+
+      /* need to update istart */
+      const int *g1 = grp.begin() + istart;
+      for(unsigned int j = istart; j <= i; ++j, ++g1){
+        if(*g - *g1 < (int)width){
+          istart = j;
+          break;
+        } else
+          --nobs; /* one less observation in the window */
+      }
+    }
+
+    bool is_last = i == grp.n_elem - 1L,
+      is_last_in_group = is_last || *g != *(g + 1L);
+    if(!is_last_in_group or !has_window_length)
+      continue;
+
+    if(is_new_chunk && nobs >= min_obs){
+      /* we have a new chunk */
+      is_new_chunk = false;
+
+      /* we need to set the values from istart and where those with values
+       * start */
+      ++chunk_n;
+      has_value_start.push_back(grp_start + 1L);
+      grp_idx_start.push_back(istart + 1L);
+
+    } else if(!is_new_chunk && nobs < min_obs){
+      /* need to find a new chunk */
+      is_new_chunk = true;
+      grp_idx_stop.push_back(grp_start);
+
+    }
+
+    if(!is_new_chunk && is_last){
+      grp_idx_stop.push_back(i + 1L);
+
+    }
+
+  }
+
+  return Rcpp::List::create(
+    Rcpp::Named("grp_idx_start")   = Rcpp::wrap(grp_idx_start),
+    Rcpp::Named("grp_idx_stop")    = Rcpp::wrap(grp_idx_stop),
+    Rcpp::Named("has_value_start") = Rcpp::wrap(has_value_start));
+}
+

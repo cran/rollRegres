@@ -12,6 +12,7 @@ roll_regress_R <- function(X, y, width){
   
   dummy_1 <- matrix(0.)
   dummy_2 <- numeric(p)
+  dummy_3 <- numeric(p)
 
   is_first <- TRUE
   for(i in width:n){
@@ -30,11 +31,11 @@ roll_regress_R <- function(X, y, width){
 
       # update R 
       rollRegres:::dchud_wrap(
-        R, p, p, x_new, dummy_1, 0L, 0L, 0., 0., dummy_2, dummy_2)
+        R, p, p, x_new, dummy_1, 0L, 0L, 0., 0., dummy_2, dummy_3)
 
       # downdate R
       rollRegres:::dchdd_wrap(
-        R, p, p, x_old, dummy_1, 0L, 0L, 0., 0., dummy_2, dummy_2, 
+        R, p, p, x_old, dummy_1, 0L, 0L, 0., 0., dummy_2, dummy_3, 
         integer(1))
 
       # update XtY
@@ -209,6 +210,7 @@ pck_out <- roll_regres.fit(
 #####
 # assign R-version
 R_func <- function(X, y, width, grp){
+  grp <- grp + 1L - min(grp)
   u_grp = unique(grp)
   n <- nrow(X)
   p <- ncol(X)
@@ -217,7 +219,7 @@ R_func <- function(X, y, width, grp){
   r.squared          <- rep(NA_real_, n)
   one_step_forecasts <- rep(NA_real_, n)
 
-  start_val <- max(which(u_grp <= width))
+  start_val <- min(which(u_grp >= width))
   for(g in u_grp[start_val:length(u_grp)]){
     idx <- which(grp %in% (g - width + 1L):g)
     i <- which(grp == g)
@@ -251,6 +253,71 @@ stopifnot(isTRUE(all.equal(R_out$sigmas            , pck_out$sigmas)))
 stopifnot(isTRUE(all.equal(R_out$r.squared         , pck_out$r.squared)))
 stopifnot(isTRUE(all.equal(R_out$one_step_forecasts, pck_out$one_step_forecasts)))
 
+## ----min_obs------------------------------------------------------------------
+#####
+# simulate data
+set.seed(96235555)
+n   <- 10L * 12L * 21L # x years w/ 12 months of 21 trading days
+month <- (seq_len(n) - 1L) %/% 21L + 1L # group by months
+set.seed(29478439)
+X <- matrix(rnorm(n * 4L), ncol = 4L)
+y <- rnorm(n)
+
+# randomly drop rows
+keep <- seq_along(y) %in% sample.int(nrow(X), as.integer(n * .5))
+X     <- X    [keep, ]
+y     <- y    [keep]
+month <- month[keep]
+
+#####
+# use package function
+pck_out <- roll_regres.fit(
+  X, y, width = 12L, grp = month, min_obs = 21L * 6L, do_downdates = TRUE, 
+  do_compute = c("sigmas", "r.squareds"))
+
+#####
+# assign R-version
+R_func <- function(X, y, width, grp, downdate, min_obs){
+  grp <- grp + 1L - min(grp)
+  u_grp = unique(grp)
+  n <- nrow(X)
+  p <- ncol(X)
+  out <- matrix(NA_real_, n, p)
+  sigmas    <- rep(NA_real_, n)
+  r.squared <- rep(NA_real_, n)
+
+  start_val <- min(which(u_grp >= width))
+  for(g in u_grp[start_val:length(u_grp)]){
+    idx <-
+      if(downdate)
+        which(grp %in% (g - width + 1L):g) else
+          which(grp %in% 1:g)
+    i <- which(grp == g)
+    if(length(idx) < min_obs)
+      next
+    fit <- lm(y[idx] ~ -1 + X[idx, , drop = FALSE])
+    out[i, ] <- sapply(fit$coefficients, rep, times = length(i))
+
+    su <- summary(fit)
+    sigmas[i] <- su$sigma
+
+    ss1 <- sum((y[idx] - mean(y[idx]))^2)
+    ss2 <- sum(fit$residuals^2)
+    r.squared[i] <- 1 - ss2 / ss1
+  }
+
+  list(coef = out, sigmas = sigmas, r.squared = r.squared)
+}
+
+R_out <- R_func(X, y, width = 12L, downdate = TRUE, grp = month, 
+                min_obs = 21L * 6L)
+
+#####
+# gives the same
+stopifnot(isTRUE(all.equal(R_out$coef     , pck_out$coefs)))
+stopifnot(isTRUE(all.equal(R_out$sigmas   , pck_out$sigmas)))
+stopifnot(isTRUE(all.equal(R_out$r.squared, pck_out$r.squared)))
+
 ## ----ses_info-----------------------------------------------------------------
 sessionInfo()
 
@@ -264,6 +331,7 @@ sessionInfo()
 #  
 #    dummy_1 <- matrix(0.)
 #    dummy_2 <- numeric(p)
+#    dummy_3 <- numeric(p)
 #  
 #    is_first <- TRUE
 #    for(i in width:n){
@@ -282,11 +350,11 @@ sessionInfo()
 #  
 #        # update R
 #        rollRegres:::dchud_wrap(
-#          R, p, p, x_new, dummy_1, 0L, 0L, 0., 0., dummy_2, dummy_2)
+#          R, p, p, x_new, dummy_1, 0L, 0L, 0., 0., dummy_2, dummy_3)
 #  
 #        # downdate R
 #        rollRegres:::dchdd_wrap(
-#          R, p, p, x_old, dummy_1, 0L, 0L, 0., 0., dummy_2, dummy_2,
+#          R, p, p, x_old, dummy_1, 0L, 0L, 0., 0., dummy_2, dummy_3,
 #          integer(1))
 #  
 #        # update XtY
