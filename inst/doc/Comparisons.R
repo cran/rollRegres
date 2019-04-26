@@ -4,54 +4,6 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#R", error = FALSE)
 
 ## ----def_roll_funcs, echo = FALSE, message=FALSE------------------------------
 #####
-# Pure R version of package function
-roll_regress_R <- function(X, y, width){
-  n <- nrow(X)
-  p <- ncol(X)
-  out <- matrix(NA_real_, p, n)
-  
-  dummy_1 <- matrix(0.)
-  dummy_2 <- numeric(p)
-  dummy_3 <- numeric(p)
-
-  is_first <- TRUE
-  for(i in width:n){
-    if(is_first){
-      is_first <- FALSE
-      qr. <- qr(X[1:width, ])
-      R <- qr.R(qr.)
-
-      # Use X^T
-      X <- t(X)
-
-      XtY <- drop(tcrossprod(y[1:width], X[, 1:width]))
-    } else {
-      x_new <- X[, i]
-      x_old <- X[, i - width]
-
-      # update R 
-      rollRegres:::dchud_wrap(
-        R, p, p, x_new, dummy_1, 0L, 0L, 0., 0., dummy_2, dummy_3)
-
-      # downdate R
-      rollRegres:::dchdd_wrap(
-        R, p, p, x_old, dummy_1, 0L, 0L, 0., 0., dummy_2, dummy_3, 
-        integer(1))
-
-      # update XtY
-      XtY <- XtY + y[i] * x_new - y[i - width] * x_old
-    }
-
-    coef. <- .Internal(backsolve(R, XtY, p, TRUE, TRUE))
-    coef. <- .Internal(backsolve(R, coef., p, TRUE, FALSE))
-
-    out[, i] <- coef.
-  }
-
-  t(out)
-}
-
-#####
 # simple R version
 roll_regress_R_for_loop <- function(X, y, width){
   n <- nrow(X)
@@ -83,14 +35,13 @@ roll_regress_zoo <- function(x, y, width){
 # roll_lm
 library(roll)
 roll_lm_func <- function(x, y ,width)
-  roll_lm(X, matrix(y, ncol = 1), wdth, intercept = FALSE)$coefficients[, -1L]
+  roll_lm(X, matrix(y, ncol = 1), wdth, intercept = FALSE)$coefficients
 
 # use one thread as other methods are easily to compute in parallel too
 RcppParallel::setThreadOptions(numThreads = 1)
 
 # compile functions
 library(compiler)
-roll_regress_R          <- cmpfun(roll_regress_R)
 roll_regress_R_for_loop <- cmpfun(roll_regress_R_for_loop)
 .zoo_inner              <- cmpfun(.zoo_inner)
 roll_regress_zoo        <- cmpfun(roll_regress_zoo)
@@ -109,15 +60,14 @@ frm <- eval(parse(text = paste0(
 
 ## ----roll_gives_same----------------------------------------------------------
 library(rollRegres)
-all.equal(roll_regress_R(X, y, wdth), roll_regres.fit(X, y, wdth)$coefs, 
+base_res <- roll_regress_R_for_loop(X, y, wdth)
+all.equal(base_res, roll_regres.fit(X, y, wdth)$coefs, 
           check.attributes = FALSE)
-all.equal(roll_regress_R(X, y, wdth), roll_regres(frm, df, wdth)$coefs, 
+all.equal(base_res, roll_regres(frm, df, wdth)$coefs, 
           check.attributes = FALSE)
-all.equal(roll_regress_R(X, y, wdth), roll_regress_zoo(X, y, wdth), 
+all.equal(base_res, roll_regress_zoo(X, y, wdth), 
           check.attributes = FALSE)
-all.equal(roll_regress_R(X, y, wdth), roll_regress_R_for_loop(X, y, wdth), 
-          check.attributes = FALSE)
-all.equal(roll_regress_R(X, y, wdth), roll_lm_func(X, y, wdth), 
+all.equal(base_res, roll_lm_func(X, y, wdth), 
           check.attributes = FALSE)
 
 ## ----benchmark_roll-----------------------------------------------------------
@@ -125,7 +75,6 @@ microbenchmark::microbenchmark(
   roll_regress            = roll_regres.fit(X, y, wdth),
   # this will be slower due to call to `model.matrix` and `model.frame`
   roll_regress_df         = roll_regres(frm, df, wdth),
-  roll_regress_R          = roll_regress_R(X, y, wdth),
   roll_regress_zoo        = roll_regress_zoo(X, y, wdth),
   roll_regress_R_for_loop = roll_regress_R_for_loop(X, y, wdth),
   roll_lm = roll_lm_func(X, y, wdth),
@@ -185,10 +134,11 @@ R_out <- R_func(X, y, 50L)
 
 #####
 # gives the same
-stopifnot(isTRUE(all.equal(R_out$coef              , pck_out$coefs)))
-stopifnot(isTRUE(all.equal(R_out$sigmas            , pck_out$sigmas)))
-stopifnot(isTRUE(all.equal(R_out$r.squared         , pck_out$r.squared)))
-stopifnot(isTRUE(all.equal(R_out$one_step_forecasts, pck_out$one_step_forecasts)))
+stopifnot(
+  isTRUE(all.equal(R_out$coef              , pck_out$coefs)), 
+  isTRUE(all.equal(R_out$sigmas            , pck_out$sigmas)), 
+  isTRUE(all.equal(R_out$r.squared         , pck_out$r.squared)), 
+  isTRUE(all.equal(R_out$one_step_forecasts, pck_out$one_step_forecasts)))
 
 ## ----block_example------------------------------------------------------------
 #####
@@ -248,10 +198,11 @@ R_out <- R_func(X, y, 10L, grp = week)
 
 #####
 # gives the same
-stopifnot(isTRUE(all.equal(R_out$coef              , pck_out$coefs)))
-stopifnot(isTRUE(all.equal(R_out$sigmas            , pck_out$sigmas)))
-stopifnot(isTRUE(all.equal(R_out$r.squared         , pck_out$r.squared)))
-stopifnot(isTRUE(all.equal(R_out$one_step_forecasts, pck_out$one_step_forecasts)))
+stopifnot(
+  isTRUE(all.equal(R_out$coef              , pck_out$coefs)), 
+  isTRUE(all.equal(R_out$sigmas            , pck_out$sigmas)), 
+  isTRUE(all.equal(R_out$r.squared         , pck_out$r.squared)), 
+  isTRUE(all.equal(R_out$one_step_forecasts, pck_out$one_step_forecasts)))
 
 ## ----min_obs------------------------------------------------------------------
 #####
@@ -314,62 +265,15 @@ R_out <- R_func(X, y, width = 12L, downdate = TRUE, grp = month,
 
 #####
 # gives the same
-stopifnot(isTRUE(all.equal(R_out$coef     , pck_out$coefs)))
-stopifnot(isTRUE(all.equal(R_out$sigmas   , pck_out$sigmas)))
-stopifnot(isTRUE(all.equal(R_out$r.squared, pck_out$r.squared)))
+stopifnot(
+  isTRUE(all.equal(R_out$coef     , pck_out$coefs)),
+  isTRUE(all.equal(R_out$sigmas   , pck_out$sigmas)),
+  isTRUE(all.equal(R_out$r.squared, pck_out$r.squared)))
 
 ## ----ses_info-----------------------------------------------------------------
 sessionInfo()
 
 ## ----def_roll_funcs, eval = FALSE---------------------------------------------
-#  #####
-#  # Pure R version of package function
-#  roll_regress_R <- function(X, y, width){
-#    n <- nrow(X)
-#    p <- ncol(X)
-#    out <- matrix(NA_real_, p, n)
-#  
-#    dummy_1 <- matrix(0.)
-#    dummy_2 <- numeric(p)
-#    dummy_3 <- numeric(p)
-#  
-#    is_first <- TRUE
-#    for(i in width:n){
-#      if(is_first){
-#        is_first <- FALSE
-#        qr. <- qr(X[1:width, ])
-#        R <- qr.R(qr.)
-#  
-#        # Use X^T
-#        X <- t(X)
-#  
-#        XtY <- drop(tcrossprod(y[1:width], X[, 1:width]))
-#      } else {
-#        x_new <- X[, i]
-#        x_old <- X[, i - width]
-#  
-#        # update R
-#        rollRegres:::dchud_wrap(
-#          R, p, p, x_new, dummy_1, 0L, 0L, 0., 0., dummy_2, dummy_3)
-#  
-#        # downdate R
-#        rollRegres:::dchdd_wrap(
-#          R, p, p, x_old, dummy_1, 0L, 0L, 0., 0., dummy_2, dummy_3,
-#          integer(1))
-#  
-#        # update XtY
-#        XtY <- XtY + y[i] * x_new - y[i - width] * x_old
-#      }
-#  
-#      coef. <- .Internal(backsolve(R, XtY, p, TRUE, TRUE))
-#      coef. <- .Internal(backsolve(R, coef., p, TRUE, FALSE))
-#  
-#      out[, i] <- coef.
-#    }
-#  
-#    t(out)
-#  }
-#  
 #  #####
 #  # simple R version
 #  roll_regress_R_for_loop <- function(X, y, width){
@@ -402,14 +306,13 @@ sessionInfo()
 #  # roll_lm
 #  library(roll)
 #  roll_lm_func <- function(x, y ,width)
-#    roll_lm(X, matrix(y, ncol = 1), wdth, intercept = FALSE)$coefficients[, -1L]
+#    roll_lm(X, matrix(y, ncol = 1), wdth, intercept = FALSE)$coefficients
 #  
 #  # use one thread as other methods are easily to compute in parallel too
 #  RcppParallel::setThreadOptions(numThreads = 1)
 #  
 #  # compile functions
 #  library(compiler)
-#  roll_regress_R          <- cmpfun(roll_regress_R)
 #  roll_regress_R_for_loop <- cmpfun(roll_regress_R_for_loop)
 #  .zoo_inner              <- cmpfun(.zoo_inner)
 #  roll_regress_zoo        <- cmpfun(roll_regress_zoo)
