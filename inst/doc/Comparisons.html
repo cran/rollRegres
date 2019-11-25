@@ -7,12 +7,13 @@
 <meta charset="utf-8" />
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <meta name="author" content="Benjamin Christoffersen" />
 
-<meta name="date" content="2019-04-26" />
+<meta name="date" content="2019-11-24" />
 
 <title>Computation time and features</title>
 
@@ -70,7 +71,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
       if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
       var style = rule.style.cssText;
       // check if color or background-color is set
-      if (rule.style.color === '' || rule.style.backgroundColor === '') continue;
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
       // replace div.sourceCode by a pre.sourceCode rule
       sheets[i].deleteRule(j);
       sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
@@ -95,7 +96,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h1 class="title toc-ignore">Computation time and features</h1>
 <h4 class="author">Benjamin Christoffersen</h4>
-<h4 class="date">2019-04-26</h4>
+<h4 class="date">2019-11-24</h4>
 
 
 
@@ -138,17 +139,17 @@ base_res &lt;-<span class="st"> </span><span class="kw">roll_regress_R_for_loop<
   <span class="dt">times =</span> <span class="dv">5</span>)
 <span class="co">#R Unit: milliseconds</span>
 <span class="co">#R                     expr        min         lq       mean     median         uq</span>
-<span class="co">#R             roll_regress   4.878659   4.975086   5.007243   5.027944   5.057542</span>
-<span class="co">#R          roll_regress_df   5.517683   5.536775   5.786401   5.539363   6.057450</span>
-<span class="co">#R         roll_regress_zoo 497.129840 506.910501 513.787995 512.832266 523.328499</span>
-<span class="co">#R  roll_regress_R_for_loop 285.660897 299.342112 300.358362 301.748222 303.265839</span>
-<span class="co">#R                  roll_lm  61.385734  63.201430  63.389449  63.475249  63.923149</span>
+<span class="co">#R             roll_regress   4.949844   4.990765   5.116116   5.019353   5.034736</span>
+<span class="co">#R          roll_regress_df   5.582242   5.638712   6.415709   5.681938   5.840059</span>
+<span class="co">#R         roll_regress_zoo 513.045797 529.249343 527.956594 531.347242 533.030741</span>
+<span class="co">#R  roll_regress_R_for_loop 289.162866 298.066299 308.334590 315.472252 316.488637</span>
+<span class="co">#R                  roll_lm  51.067710  51.812972  53.017997  51.846693  53.445712</span>
 <span class="co">#R         max neval</span>
-<span class="co">#R    5.096982     5</span>
-<span class="co">#R    6.280736     5</span>
-<span class="co">#R  528.738869     5</span>
-<span class="co">#R  311.774741     5</span>
-<span class="co">#R   64.961683     5</span>
+<span class="co">#R    5.585880     5</span>
+<span class="co">#R    9.335593     5</span>
+<span class="co">#R  533.109848     5</span>
+<span class="co">#R  322.482896     5</span>
+<span class="co">#R   56.916899     5</span>
 
 <span class="co"># here is the formula used above</span>
 frm
@@ -186,7 +187,7 @@ R_func &lt;-<span class="st"> </span><span class="cf">function</span>(X, y, widt
 
   <span class="cf">for</span>(i <span class="cf">in</span> width<span class="op">:</span>n){
     idx &lt;-<span class="st"> </span><span class="dv">1</span><span class="op">:</span>i
-    fit &lt;-<span class="st"> </span><span class="kw">lm</span>(y[idx] <span class="op">~</span><span class="st"> </span><span class="op">-</span><span class="dv">1</span> <span class="op">+</span><span class="st"> </span>X[idx, , <span class="dt">drop =</span> <span class="ot">FALSE</span>])
+    fit &lt;-<span class="st"> </span><span class="kw">lm</span>(y[idx] <span class="op">~</span><span class="st"> </span><span class="dv">-1</span> <span class="op">+</span><span class="st"> </span>X[idx, , <span class="dt">drop =</span> <span class="ot">FALSE</span>])
     out[i, ] &lt;-<span class="st"> </span>fit<span class="op">$</span>coefficients
 
     su &lt;-<span class="st"> </span><span class="kw">summary</span>(fit)
@@ -252,7 +253,7 @@ R_func &lt;-<span class="st"> </span><span class="cf">function</span>(X, y, widt
   <span class="cf">for</span>(g <span class="cf">in</span> u_grp[start_val<span class="op">:</span><span class="kw">length</span>(u_grp)]){
     idx &lt;-<span class="st"> </span><span class="kw">which</span>(grp <span class="op">%in%</span><span class="st"> </span>(g <span class="op">-</span><span class="st"> </span>width <span class="op">+</span><span class="st"> </span>1L)<span class="op">:</span>g)
     i &lt;-<span class="st"> </span><span class="kw">which</span>(grp <span class="op">==</span><span class="st"> </span>g)
-    fit &lt;-<span class="st"> </span><span class="kw">lm</span>(y[idx] <span class="op">~</span><span class="st"> </span><span class="op">-</span><span class="dv">1</span> <span class="op">+</span><span class="st"> </span>X[idx, , <span class="dt">drop =</span> <span class="ot">FALSE</span>])
+    fit &lt;-<span class="st"> </span><span class="kw">lm</span>(y[idx] <span class="op">~</span><span class="st"> </span><span class="dv">-1</span> <span class="op">+</span><span class="st"> </span>X[idx, , <span class="dt">drop =</span> <span class="ot">FALSE</span>])
     out[i, ] &lt;-<span class="st"> </span><span class="kw">sapply</span>(fit<span class="op">$</span>coefficients, rep, <span class="dt">times =</span> <span class="kw">length</span>(i))
 
     su &lt;-<span class="st"> </span><span class="kw">summary</span>(fit)
@@ -296,7 +297,7 @@ X &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">
 y &lt;-<span class="st"> </span><span class="kw">rnorm</span>(n)
 
 <span class="co"># randomly drop rows</span>
-keep &lt;-<span class="st"> </span><span class="kw">seq_along</span>(y) <span class="op">%in%</span><span class="st"> </span><span class="kw">sample.int</span>(<span class="kw">nrow</span>(X), <span class="kw">as.integer</span>(n <span class="op">*</span><span class="st"> </span>.<span class="dv">5</span>))
+keep &lt;-<span class="st"> </span><span class="kw">seq_along</span>(y) <span class="op">%in%</span><span class="st"> </span><span class="kw">sample.int</span>(<span class="kw">nrow</span>(X), <span class="kw">as.integer</span>(n <span class="op">*</span><span class="st"> </span><span class="fl">.5</span>))
 X     &lt;-<span class="st"> </span>X    [keep, ]
 y     &lt;-<span class="st"> </span>y    [keep]
 month &lt;-<span class="st"> </span>month[keep]
@@ -327,7 +328,7 @@ R_func &lt;-<span class="st"> </span><span class="cf">function</span>(X, y, widt
     i &lt;-<span class="st"> </span><span class="kw">which</span>(grp <span class="op">==</span><span class="st"> </span>g)
     <span class="cf">if</span>(<span class="kw">length</span>(idx) <span class="op">&lt;</span><span class="st"> </span>min_obs)
       <span class="cf">next</span>
-    fit &lt;-<span class="st"> </span><span class="kw">lm</span>(y[idx] <span class="op">~</span><span class="st"> </span><span class="op">-</span><span class="dv">1</span> <span class="op">+</span><span class="st"> </span>X[idx, , <span class="dt">drop =</span> <span class="ot">FALSE</span>])
+    fit &lt;-<span class="st"> </span><span class="kw">lm</span>(y[idx] <span class="op">~</span><span class="st"> </span><span class="dv">-1</span> <span class="op">+</span><span class="st"> </span>X[idx, , <span class="dt">drop =</span> <span class="ot">FALSE</span>])
     out[i, ] &lt;-<span class="st"> </span><span class="kw">sapply</span>(fit<span class="op">$</span>coefficients, rep, <span class="dt">times =</span> <span class="kw">length</span>(i))
 
     su &lt;-<span class="st"> </span><span class="kw">summary</span>(fit)
@@ -355,12 +356,12 @@ R_out &lt;-<span class="st"> </span><span class="kw">R_func</span>(X, y, <span c
 <div id="session-info" class="section level1">
 <h1>Session info</h1>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">sessionInfo</span>()
-<span class="co">#R R version 3.5.3 (2019-03-11)</span>
+<span class="co">#R R version 3.6.1 (2019-07-05)</span>
 <span class="co">#R Platform: x86_64-pc-linux-gnu (64-bit)</span>
-<span class="co">#R Running under: Ubuntu 18.04.2 LTS</span>
+<span class="co">#R Running under: Ubuntu 18.04.3 LTS</span>
 <span class="co">#R </span>
 <span class="co">#R Matrix products: default</span>
-<span class="co">#R BLAS: /usr/lib/x86_64-linux-gnu/blas/libblas.so.3.7.1</span>
+<span class="co">#R BLAS:   /usr/lib/x86_64-linux-gnu/blas/libblas.so.3.7.1</span>
 <span class="co">#R LAPACK: /usr/lib/x86_64-linux-gnu/lapack/liblapack.so.3.7.1</span>
 <span class="co">#R </span>
 <span class="co">#R locale:</span>
@@ -376,15 +377,16 @@ R_out &lt;-<span class="st"> </span><span class="kw">R_func</span>(X, y, <span c
 <span class="co">#R [8] base     </span>
 <span class="co">#R </span>
 <span class="co">#R other attached packages:</span>
-<span class="co">#R [1] rollRegres_0.1.2 roll_1.1.2       zoo_1.8-5       </span>
+<span class="co">#R [1] rollRegres_0.1.3 roll_1.1.3       zoo_1.8-6       </span>
 <span class="co">#R </span>
 <span class="co">#R loaded via a namespace (and not attached):</span>
-<span class="co">#R  [1] Rcpp_1.0.1           lattice_0.20-38      digest_0.6.18       </span>
-<span class="co">#R  [4] grid_3.5.3           backports_1.1.4      magrittr_1.5        </span>
-<span class="co">#R  [7] evaluate_0.13        RcppParallel_4.4.2   stringi_1.4.3       </span>
-<span class="co">#R [10] checkmate_1.9.1      rmarkdown_1.12       tools_3.5.3         </span>
-<span class="co">#R [13] stringr_1.4.0        xfun_0.6             yaml_2.2.0          </span>
-<span class="co">#R [16] microbenchmark_1.4-6 htmltools_0.3.6      knitr_1.22</span></code></pre></div>
+<span class="co">#R  [1] Rcpp_1.0.3           lattice_0.20-38      digest_0.6.22       </span>
+<span class="co">#R  [4] grid_3.6.1           backports_1.1.5      magrittr_1.5        </span>
+<span class="co">#R  [7] evaluate_0.14        RcppParallel_4.4.4   rlang_0.4.1         </span>
+<span class="co">#R [10] stringi_1.4.3        checkmate_1.9.4      rmarkdown_1.17      </span>
+<span class="co">#R [13] tools_3.6.1          stringr_1.4.0        xfun_0.11           </span>
+<span class="co">#R [16] yaml_2.2.0           microbenchmark_1.4-7 htmltools_0.4.0     </span>
+<span class="co">#R [19] knitr_1.26</span></code></pre></div>
 </div>
 <div id="function-definitions" class="section level1">
 <h1>Function definitions</h1>
@@ -407,7 +409,7 @@ roll_regress_R_for_loop &lt;-<span class="st"> </span><span class="cf">function<
 #####
 <span class="co"># zoo version</span>
 .zoo_inner &lt;-<span class="st"> </span><span class="cf">function</span>(Z) {
-  fit &lt;-<span class="st"> </span><span class="kw">lm.fit</span>(Z[, <span class="op">-</span><span class="dv">1</span>, <span class="dt">drop =</span> <span class="ot">FALSE</span>], Z[, <span class="dv">1</span>])
+  fit &lt;-<span class="st"> </span><span class="kw">lm.fit</span>(Z[, <span class="dv">-1</span>, <span class="dt">drop =</span> <span class="ot">FALSE</span>], Z[, <span class="dv">1</span>])
   fit<span class="op">$</span>coefficients
 }
 <span class="kw">library</span>(zoo)
@@ -434,6 +436,9 @@ roll_regress_zoo        &lt;-<span class="st"> </span><span class="kw">cmpfun</s
 roll_lm_func            &lt;-<span class="st"> </span><span class="kw">cmpfun</span>(roll_lm_func)</code></pre></div>
 </div>
 
+
+
+<!-- code folding -->
 
 
 <!-- dynamically load mathjax for compatibility with self-contained -->
